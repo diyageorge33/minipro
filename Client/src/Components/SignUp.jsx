@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import VerifyEmail from "./VerifyEmail";
 
 function SignUp({ onToggleLogin }) {
   const [email, setEmail] = useState("");
@@ -7,6 +8,9 @@ function SignUp({ onToggleLogin }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+
+  // NEW: track if we should show the OTP screen
+  const [showVerifyPage, setShowVerifyPage] = useState(false);
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -24,20 +28,35 @@ function SignUp({ onToggleLogin }) {
         { email, password }
       );
 
-      // Success message display
+      // If backend says verification required → show OTP page
+      if (response.data.needsVerification) {
+        setShowVerifyPage(true);
+        return;
+      }
+
+      // fallback (should not happen)
       setIsError(false);
-      setMessage("Signup successful! Please login.");
-
-      setTimeout(() => {
-        onToggleLogin();  // Switch back to login form after delay
-      }, 1200);
-
+      setMessage("Signup successful!");
     } catch (error) {
       setIsError(true);
       setMessage(error.response?.data?.message || "Error signing up");
     }
   };
 
+  // After OTP verification, redirect to login screen
+  const handleVerified = () => {
+    alert("Email verified! You can now login.");
+    onToggleLogin();
+  };
+
+  // ----------------------
+  // RENDER: OTP PAGE FIRST IF NEEDED
+  // ----------------------
+  if (showVerifyPage) {
+    return <VerifyEmail email={email} onVerified={handleVerified} />;
+  }
+
+  // Otherwise show normal signup form
   return (
     <form className="form" onSubmit={handleSignUp}>
       <h2>Sign Up</h2>
