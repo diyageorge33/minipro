@@ -118,7 +118,6 @@ Once the backend and frontend servers are running, access the application in you
 
 ## Future Enhancements  
 
-- Add **OAuth** for third-party authentication.  
+- Add two factor authentication   
 - Implement email verification during signup.  
-- Enhance the secrets page with more interactive content.  
-- Add multi-factor authentication (MFA) for added security.  
+- Develop user dashboard and add rest of the pages according to topic of the project 
