@@ -107,7 +107,6 @@ const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
   return (
     <div className="page-wrapper">
       <div className="otp-page-card">
-        <div className="otp-icon">✉️</div>
 
         <h2 className="otp-title">Verify Your Email</h2>
         <p className="otp-sub">

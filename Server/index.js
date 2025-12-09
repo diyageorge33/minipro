@@ -37,6 +37,7 @@ app.use(
       httpOnly: true,
       // secure: true in production with HTTPS
       // sameSite: 'lax' or 'none' depending on your setup
+      sameSite: "lax",
     },
   })
 );
@@ -61,6 +62,9 @@ db
 passport.use(
   new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
     try {
+      // normalize email for login
+      email = email.trim().toLowerCase();
+
       const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
       if (result.rows.length === 0) {
         return done(null, false, { message: "User not found" });
@@ -104,6 +108,34 @@ function minutesToMs(mins) {
   return Number(mins || 10) * 60 * 1000;
 }
 
+// =====================
+//  EXTRA ROUTES FOR REACT DASHBOARD
+// =====================
+
+// Get current logged-in user (for React dashboard)
+app.get("/api/auth/me", (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ authenticated: false });
+  }
+
+  const { id, email, is_verified } = req.user || {};
+  return res.json({
+    authenticated: true,
+    user: { id, email, is_verified },
+  });
+});
+
+// Logout API (for React logout button)
+app.post("/api/auth/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Error logging out" });
+    }
+    return res.json({ success: true });
+  });
+});
+
 // --- Routes
 
 // Passport login (unchanged behavior)
@@ -120,22 +152,41 @@ app.post("/api/auth/login", (req, res, next) => {
 
 // Signup -> create user, generate OTP, send email, return needsVerification
 app.post("/api/auth/signup", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+  let { email, password } = req.body;
+
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Email and password are required" });
+  }
+
+  // normalize email
+  email = email.trim().toLowerCase();
+  console.log("[SIGNUP] Trying to register email:", email);
 
   try {
-    const existing = await db.query("SELECT id FROM users WHERE email=$1", [email]);
+    const existing = await db.query(
+      "SELECT id, email FROM users WHERE email=$1",
+      [email]
+    );
+    console.log("[SIGNUP] Existing rows for this email:", existing.rows);
+
     if (existing.rows.length > 0) {
       return res.status(400).json({ message: "User already exists!" });
     }
 
     const hashed = await bcrypt.hash(password, SALT_ROUNDS);
-    await db.query("INSERT INTO users (email, password) VALUES ($1, $2)", [email, hashed]);
+    await db.query("INSERT INTO users (email, password) VALUES ($1, $2)", [
+      email,
+      hashed,
+    ]);
 
     // generate OTP and store hashed OTP + expiry
     const otp = generateOTP();
     const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
-    const expiry = new Date(Date.now() + minutesToMs(process.env.OTP_EXPIRY_MINUTES || 10));
+    const expiry = new Date(
+      Date.now() + minutesToMs(process.env.OTP_EXPIRY_MINUTES || 10)
+    );
 
     await db.query(
       "UPDATE users SET otp_hash=$1, otp_expires=$2, otp_attempts=0 WHERE email=$3",
@@ -146,9 +197,7 @@ app.post("/api/auth/signup", async (req, res) => {
     try {
       await sendOtpEmail(email, otp);
     } catch (sendErr) {
-      // log and continue — do not leak smtp details to client
       console.error("sendOtpEmail error:", sendErr);
-      // For dev you may want to console.log the OTP so you can test:
       console.log("[DEV] OTP for", email, "=", otp);
     }
 
@@ -169,7 +218,8 @@ app.post("/api/auth/verify-email", async (req, res) => {
   if (!email || !otp) return res.status(400).json({ message: "Email and OTP required" });
 
   try {
-    const r = await db.query("SELECT * FROM users WHERE email=$1", [email]);
+    const normalizedEmail = email.trim().toLowerCase();
+    const r = await db.query("SELECT * FROM users WHERE email=$1", [normalizedEmail]);
     if (r.rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     const user = r.rows[0];
@@ -207,7 +257,8 @@ app.post("/api/auth/resend-verification", async (req, res) => {
   if (!email) return res.status(400).json({ message: "Email required" });
 
   try {
-    const r = await db.query("SELECT * FROM users WHERE email=$1", [email]);
+    const normalizedEmail = email.trim().toLowerCase();
+    const r = await db.query("SELECT * FROM users WHERE email=$1", [normalizedEmail]);
     if (r.rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     const user = r.rows[0];
@@ -215,19 +266,20 @@ app.post("/api/auth/resend-verification", async (req, res) => {
 
     const otp = generateOTP();
     const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
-    const expiry = new Date(Date.now() + minutesToMs(process.env.OTP_EXPIRY_MINUTES || 10));
+    const expiry = new Date(
+      Date.now() + minutesToMs(process.env.OTP_EXPIRY_MINUTES || 10)
+    );
 
-    await db.query("UPDATE users SET otp_hash=$1, otp_expires=$2, otp_attempts=0 WHERE id=$3", [
-      otpHash,
-      expiry,
-      user.id,
-    ]);
+    await db.query(
+      "UPDATE users SET otp_hash=$1, otp_expires=$2, otp_attempts=0 WHERE id=$3",
+      [otpHash, expiry, user.id]
+    );
 
     try {
-      await sendOtpEmail(email, otp);
+      await sendOtpEmail(normalizedEmail, otp);
     } catch (sendErr) {
       console.error("sendOtpEmail error:", sendErr);
-      console.log("[DEV] OTP for", email, "=", otp);
+      console.log("[DEV] OTP for", normalizedEmail, "=", otp);
     }
 
     return res.json({ success: true, message: "Verification code resent" });
