@@ -1,4 +1,4 @@
-/* ================= GLOBAL PAGE STYLING ================= */
+/*global page style*/
 body {
   font-family: Arial, sans-serif;
   display: flex;
@@ -7,7 +7,7 @@ body {
   height: 100vh;
   margin: 0;
 
-  /* Background (pastel image) */
+  /* Background */
   background-image: url('/pastelgreen.jpg');
   background-size: cover;
   background-position: center;
@@ -23,9 +23,9 @@ body {
   width: 100%;
 }
 
-/* ================= AUTH CARD ================= */
+/* auth card */
 .form-container {
-  background: #a8f9ac;              /* solid white card for contrast */
+  background: #a8f9ac;              
   padding: 40px 38px;
   border-radius: 22px;
   width: 420px;
@@ -33,7 +33,7 @@ body {
   border: 1px solid rgba(148,163,184,0.4);
 }
 
-/* ================= TOGGLE BUTTONS (LOGIN | SIGNUP) ================= */
+/*signup/login buttons */
 .form-toggle {
   display: flex;
   justify-content: space-between;
@@ -63,7 +63,7 @@ body {
   color: #ffffff;
 }
 
-/* ================= FORM ================= */
+/* form */
 .form {
   display: flex;
   flex-direction: column;
@@ -75,7 +75,7 @@ body {
   font-size: 26px;
   font-weight: 700;
   text-align: center;
-  color: #033452;                   /* dark, readable */
+  color: #033452;                  
 }
 
 /* Inputs */
@@ -115,16 +115,16 @@ body {
   transform: translateY(-1px);
 }
 
-/* ================= BOTTOM TEXT + LINK ================= */
+/*bottom text and link */
 .form p {
   margin-top: 14px;
   font-size: 14px;
-  color: #4b5563;                   /* dark grey, readable */
+  color: #4b5563;                   
   text-align: center;
 }
 
 .form a {
-  color: #0f766e;                   /* green accent */
+  color: #0f766e;                   
   font-weight: 600;
   text-decoration: none;
 }

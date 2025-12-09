@@ -16,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
 
-// --- Middleware
+// Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -45,7 +45,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- Postgres client
+// Postgres client
 const db = new pg.Client({
   user: process.env.PG_USER,
   host: process.env.PG_HOST,
@@ -58,7 +58,7 @@ db
   .then(() => console.log("Connected to PostgreSQL"))
   .catch((err) => console.error("Error connecting to database:", err));
 
-// --- Passport local strategy (block login if not verified)
+// Passport local strategy 
 passport.use(
   new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
     try {
@@ -99,7 +99,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// --- Helpers
+// Helpers
 function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -108,11 +108,7 @@ function minutesToMs(mins) {
   return Number(mins || 10) * 60 * 1000;
 }
 
-// =====================
-//  EXTRA ROUTES FOR REACT DASHBOARD
-// =====================
-
-// Get current logged-in user (for React dashboard)
+// Get current logged-in user
 app.get("/api/auth/me", (req, res) => {
   if (!req.isAuthenticated || !req.isAuthenticated()) {
     return res.status(401).json({ authenticated: false });
@@ -125,7 +121,7 @@ app.get("/api/auth/me", (req, res) => {
   });
 });
 
-// Logout API (for React logout button)
+// Logout API 
 app.post("/api/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) {
@@ -136,9 +132,8 @@ app.post("/api/auth/logout", (req, res) => {
   });
 });
 
-// --- Routes
 
-// Passport login (unchanged behavior)
+// Passport login 
 app.post("/api/auth/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) return next(err);
@@ -150,7 +145,7 @@ app.post("/api/auth/login", (req, res, next) => {
   })(req, res, next);
 });
 
-// Signup -> create user, generate OTP, send email, return needsVerification
+// Signup 
 app.post("/api/auth/signup", async (req, res) => {
   let { email, password } = req.body;
 
@@ -289,7 +284,7 @@ app.post("/api/auth/resend-verification", async (req, res) => {
   }
 });
 
-// Protected route example (keeps your existing secrets route behavior)
+// Protected route example
 app.get("/secrets", (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect("http://localhost:5173/login");
@@ -298,7 +293,7 @@ app.get("/secrets", (req, res) => {
   res.render("secrets", { title: "User Dashboard", email: userEmail });
 });
 
-// Logout (keeps the same behavior)
+// Logout 
 app.post("/logout", (req, res) => {
   req.logout((err) => {
     if (err) {
